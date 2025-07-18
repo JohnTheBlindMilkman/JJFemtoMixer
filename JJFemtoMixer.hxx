@@ -34,7 +34,7 @@
             private:
                 std::size_t fBufferSize;
                 bool fWaitForBuffer,fEventHashingFunctionIsDefined,fPairHashingFunctionIsDefined,fPairCutFunctionIsDefined;
-                std::map<std::string, std::deque<std::pair<std::shared_ptr<Event>, std::shared_ptr<Track> > > > fSimilarityMap;
+                std::map<std::string, std::deque<std::tuple<std::shared_ptr<Event>, std::shared_ptr<Track>, std::shared_ptr<Track> > > > fSimilarityMap;
                 std::function<std::string(const std::shared_ptr<Event> &)> fEventHashingFunction;
                 std::function<std::string(const std::shared_ptr<Pair> &)> fPairHashingFunction;
                 std::function<bool(const std::shared_ptr<Pair> &)> fPairCutFunction;
@@ -44,7 +44,7 @@
                  * @param tracks tracks vector
                  * @return std::vector<Pair> vector of pairs
                  */
-                [[nodiscard]] std::vector<std::shared_ptr<Pair> > MakePairs(const std::vector<std::shared_ptr<Track> > &tracks);
+                [[nodiscard]] std::vector<std::shared_ptr<Pair> > MakePairs(const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2);
                 /**
                  * @brief Divide pairs into corresponding category (given by the pair hash)
                  * 
@@ -52,6 +52,17 @@
                  * @return std::map<std::string, std::vector<Pair> > map of sorted vectors (each "branch"/bucket is a single group of similar pairs)
                  */
                 [[nodiscard]] std::map<std::string, std::vector<std::shared_ptr<Pair> > > SortPairs(const std::vector<std::shared_ptr<Pair> > &pairs);
+                /**
+                 * @brief 
+                 * 
+                 * @tparam Event 
+                 * @tparam Track 
+                 * @tparam Pair 
+                 * @param event 
+                 * @param tracks 
+                 * @return std::map<std::string, std::vector<std::shared_ptr<Pair> > > 
+                 */
+                std::map<std::string, std::vector<std::shared_ptr<Pair> > > AddEventImpl(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2);
 
             public:
                 /**
@@ -161,13 +172,22 @@
                  */
                 void PrintStatus() const;
                 /**
-                 * @brief Add currently processed event to the mixer.
+                 * @brief Add currently processed event to the mixer. Call this method when performing femtoscopic analysis of identical particles.
                  * 
                  * @param event Current event.
                  * @param tracks Tracks from the current event.
                  * @return std::map<std::string, std::vector<Pair> > Sorted pairs from provided tracks for given event.
                  */
                 std::map<std::string, std::vector<std::shared_ptr<Pair> > > AddEvent(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks);
+                /**
+                 * @brief Add currently processed event to the mixer. Call this method when performing femtoscopic analysis of non-identical particles.
+                 * 
+                 * @param event Current event.
+                 * @param tracks1 Tracks from the current event of the first particle type.
+                 * @param tracks2 Tracks from the current event of the second paritlce type.
+                 * @return std::map<std::string, std::vector<Pair> > Sorted pairs from provided tracks for given event.
+                 */
+                std::map<std::string, std::vector<std::shared_ptr<Pair> > > AddEvent(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2);
                 /**
                  * @brief Get the sorted pairs which come from similar events, but not from this event.
                  * 
@@ -178,21 +198,20 @@
         };
 
         template<typename Event, typename Track, typename Pair>
-        std::vector<std::shared_ptr<Pair> > JJFemtoMixer<Event,Track,Pair>::MakePairs(const std::vector<std::shared_ptr<Track> > &tracks)
+        std::vector<std::shared_ptr<Pair> > JJFemtoMixer<Event,Track,Pair>::MakePairs(const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2)
         {
             bool reverse = false;
-            const std::size_t trackVecSize = tracks.size();
 
             std::vector<std::shared_ptr<Pair> > tmpVector;
-            tmpVector.reserve((trackVecSize - 1) * trackVecSize / 2); // reserve the expected number of pairs
+            tmpVector.reserve(tracks1.size() * tracks2.size()); // reserve the expected number of pairs
 
-            for (std::size_t iter1 = 0; iter1 < trackVecSize; ++iter1)
-                for (std::size_t iter2 = iter1 + 1; iter2 < trackVecSize; ++iter2)
+            for (const auto &track1 : tracks1)
+                for (const auto &track2 : tracks2)
                 {
                     if (reverse)
-                        tmpVector.emplace_back(new Pair(tracks.at(iter2),tracks.at(iter1)));
+                        tmpVector.emplace_back(new Pair(track2,track1));
                     else
-                        tmpVector.emplace_back(new Pair(tracks.at(iter1),tracks.at(iter2)));
+                        tmpVector.emplace_back(new Pair(track1,track2));
 
                     reverse = !reverse; // reverse the order of tracks every other time (get rid of the bias from the track sorter)
                 }
@@ -232,6 +251,27 @@
         }
 
         template<typename Event, typename Track, typename Pair>
+        std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::AddEventImpl(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2)
+        {
+            std::string evtHash = fEventHashingFunction(event);
+            std::tuple<std::shared_ptr<Event>, std::shared_ptr<Track>, std::shared_ptr<Track> > trackPair{event,*JJUtils::select_randomly(tracks1.begin(),tracks1.end()),*JJUtils::select_randomly(tracks2.begin(),tracks2.end())};
+
+            // an entry for given evtHash may not exist, so we must check if that's the case
+            if (fSimilarityMap.find(evtHash) == fSimilarityMap.end())
+            {
+                fSimilarityMap.emplace(evtHash,std::deque<std::tuple<std::shared_ptr<Event>, std::shared_ptr<Track>, std::shared_ptr<Track> > >(1,trackPair));
+            }
+            else
+            {
+                fSimilarityMap.at(evtHash).push_back(trackPair);
+                if (fSimilarityMap.at(evtHash).size() > fBufferSize)
+                    fSimilarityMap.at(evtHash).pop_front(); 
+            }
+
+            return SortPairs(MakePairs(tracks1,tracks2));
+        }
+
+        template<typename Event, typename Track, typename Pair>
         void JJFemtoMixer<Event,Track,Pair>::PrintSettings() const
         {
             std::cout << "\n------=========== JJFemtoMixer Settings ===========------\n";
@@ -255,42 +295,38 @@
         template<typename Event, typename Track, typename Pair>
         std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::AddEvent(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks)
         {
-            std::string evtHash = fEventHashingFunction(event);
-            std::pair<std::shared_ptr<Event>, std::shared_ptr<Track> > trackPair{event,*JJUtils::select_randomly(tracks.begin(),tracks.end())};
+            const std::size_t halfSize = tracks.size() / 2;
+            std::vector<std::shared_ptr<Track> > tracks1(tracks.begin(), tracks.begin() + halfSize);
+            std::vector<std::shared_ptr<Track> > tracks2(tracks.begin() + halfSize, tracks.end()); // iterator ranges represent half open ranges [begin, end); no need to add 1 to the second begin iterator
+            
+            return AddEventImpl(event,tracks1,tracks2);
+        }
 
-            // an entry for given evtHash may not exist, so we must check if that's the case
-            if (fSimilarityMap.find(evtHash) == fSimilarityMap.end())
-            {
-                fSimilarityMap.emplace(evtHash,std::deque<std::pair<std::shared_ptr<Event>, std::shared_ptr<Track> > >(1,trackPair));
-            }
-            else
-            {
-                fSimilarityMap.at(evtHash).push_back(trackPair);
-                if (fSimilarityMap.at(evtHash).size() > fBufferSize)
-                    fSimilarityMap.at(evtHash).pop_front(); 
-            }
-
-            return SortPairs(MakePairs(tracks));
+        template<typename Event, typename Track, typename Pair>
+        std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::AddEvent(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2)
+        {
+            return AddEventImpl(event,tracks1,tracks2);
         }
 
         template<typename Event, typename Track, typename Pair>
         std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::GetSimilarPairs(const std::shared_ptr<Event> &event)
         {
-            std::vector<std::shared_ptr<Track> > outputVec;
+            std::vector<std::shared_ptr<Track> > outputVec1, outputVec2;
             std::string evtHash = fEventHashingFunction(event);
 
             if (fSimilarityMap.at(evtHash).size() == fBufferSize || fWaitForBuffer == false)
             {
-                for (const auto &[evt,trck] : fSimilarityMap.at(evtHash))
+                for (const auto &[evt,trck1,trck2] : fSimilarityMap.at(evtHash))
                 {
                     if (evt != event)
                     {
-                        outputVec.push_back(trck);
+                        outputVec1.push_back(trck1);
+                        outputVec2.push_back(trck2);
                     }
                 }
             }
 
-            return SortPairs(MakePairs(outputVec));
+            return SortPairs(MakePairs(outputVec1,outputVec2));
         }
     } // namespace Mixing
     

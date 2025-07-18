@@ -201,19 +201,31 @@
         std::vector<std::shared_ptr<Pair> > JJFemtoMixer<Event,Track,Pair>::MakePairs(const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2)
         {
             bool reverse = false;
+            const std::size_t size1 = tracks1.size();
+            const std::size_t size2 = tracks2.size();
 
             std::vector<std::shared_ptr<Pair> > tmpVector;
-            tmpVector.reserve(tracks1.size() * tracks2.size()); // reserve the expected number of pairs
+            if (size1 > 0 && size2 > 0) // this is so we don't create std::size_t(-1) by accident
+            {
+                tmpVector.reserve(std::min(size1,size2) * (std::max(size1,size2) - 1)); // reserve the expected number of pairs
+            }
+            else
+            {
+                return {};
+            }
 
-            for (const auto &track1 : tracks1)
-                for (const auto &track2 : tracks2)
+            for (std::size_t it1 = 0; it1 < size1; ++it1)
+                for (std::size_t it2 = 0; it2 < size2; ++it2)
                 {
-                    if (reverse)
-                        tmpVector.emplace_back(new Pair(track2,track1));
-                    else
-                        tmpVector.emplace_back(new Pair(track1,track2));
+                    if (it1 != it2) // make a pair only if the two tracks are not on the diagonal (this is required by the backgound unfortunately)
+                    {
+                        if (reverse)
+                            tmpVector.emplace_back(new Pair(tracks2.at(it2),tracks1.at(it1)));
+                        else
+                            tmpVector.emplace_back(new Pair(tracks1.at(it1),tracks2.at(it2)));
 
-                    reverse = !reverse; // reverse the order of tracks every other time (get rid of the bias from the track sorter)
+                        reverse = !reverse; // reverse the order of tracks every other time (get rid of the bias from the track sorter)
+                    }
                 }
 
             return tmpVector;

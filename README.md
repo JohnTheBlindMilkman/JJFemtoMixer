@@ -127,15 +127,13 @@ I used the nice looking Doxygen Awesome by jothepro. To generate the HTML docume
 
 ## Important Notes
 
-1. Currently this works only for identical particles. There are plans to extend this for non-identical. If you wish to add this feature submit a pull request.
+There are certain criteria which your event and pair class have to meet in order for the code to compile:
 
-2. There are certain criteria which your event and pair class have to meet in order for the code to compile:
+### Event Class:
+- Has a `GetID()` function, which returns an `std::string` to know if we are not trying to mix two of the same events.
 
-    ### Event Class:
-    - Has an `operator!=` to know if we are not trying to mix two of the same events.
-
-    ### Pair Class:
-    - Has a constructor of the following signature:
+### Pair Class:
+- Has a constructor of the following signature:
     ```c++
     YourPairClass(const std::shared_ptr<YourTrackClass>&,const std::shared_ptr<YourTrackClass>&)
     ```

@@ -15,7 +15,10 @@
         int centrality;
         float Z;
         std::vector<std::shared_ptr<MyTrack> > tracks;
-        std::string GetID() const noexcept {return ID;}
+        bool operator!=(const MyEvent &other)
+        {
+            return ID != other.ID;
+        }
     };
 
     struct MyPair

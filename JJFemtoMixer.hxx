@@ -34,7 +34,7 @@
             private:
                 std::size_t fBufferSize;
                 bool fWaitForBuffer,fEventHashingFunctionIsDefined,fPairHashingFunctionIsDefined,fPairCutFunctionIsDefined;
-                std::map<std::string, std::deque<std::tuple<std::shared_ptr<Event>, std::shared_ptr<Track>, std::shared_ptr<Track> > > > fSimilarityMap;
+                std::map<std::string, std::deque<std::tuple<std::string, std::shared_ptr<Track>, std::shared_ptr<Track> > > > fSimilarityMap;
                 std::function<std::string(const std::shared_ptr<Event> &)> fEventHashingFunction;
                 std::function<std::string(const std::shared_ptr<Pair> &)> fPairHashingFunction;
                 std::function<bool(const std::shared_ptr<Pair> &)> fPairCutFunction;
@@ -266,12 +266,12 @@
         std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::AddEventImpl(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks1, const std::vector<std::shared_ptr<Track> > &tracks2)
         {
             std::string evtHash = fEventHashingFunction(event);
-            std::tuple<std::shared_ptr<Event>, std::shared_ptr<Track>, std::shared_ptr<Track> > trackPair{event,*JJUtils::select_randomly(tracks1.begin(),tracks1.end()),*JJUtils::select_randomly(tracks2.begin(),tracks2.end())};
+            std::tuple<std::string, std::shared_ptr<Track>, std::shared_ptr<Track> > trackPair{event->GetID(),*JJUtils::select_randomly(tracks1.begin(),tracks1.end()),*JJUtils::select_randomly(tracks2.begin(),tracks2.end())};
 
             // an entry for given evtHash may not exist, so we must check if that's the case
             if (fSimilarityMap.find(evtHash) == fSimilarityMap.end())
             {
-                fSimilarityMap.emplace(evtHash,std::deque<std::tuple<std::shared_ptr<Event>, std::shared_ptr<Track>, std::shared_ptr<Track> > >(1,trackPair));
+                fSimilarityMap.emplace(evtHash,std::deque<std::tuple<std::string, std::shared_ptr<Track>, std::shared_ptr<Track> > >(1,trackPair));
             }
             else
             {
@@ -328,9 +328,9 @@
 
             if (fSimilarityMap.at(evtHash).size() == fBufferSize || fWaitForBuffer == false)
             {
-                for (const auto &[evt,trck1,trck2] : fSimilarityMap.at(evtHash))
+                for (const auto &[evtId,trck1,trck2] : fSimilarityMap.at(evtHash))
                 {
-                    if (evt != event)
+                    if (evtId != event->GetID())
                     {
                         outputVec1.push_back(trck1);
                         outputVec2.push_back(trck2);

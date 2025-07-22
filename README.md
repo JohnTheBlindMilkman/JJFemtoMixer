@@ -132,7 +132,7 @@ I used the nice looking Doxygen Awesome by jothepro. To generate the HTML docume
 2. There are certain criteria which your event and pair class have to meet in order for the code to compile:
 
     ### Event Class:
-    - Has an `operator!=` to know if we are not trying to mix two of the same events.
+    - Has a `std::string GetID()` function, which returns a unique ID representing the event, to know if we are not trying to mix two of the same events.
 
     ### Pair Class:
     - Has a constructor of the following signature:

@@ -49,9 +49,10 @@
                  * @brief Divide pairs into corresponding category (given by the pair hash)
                  * 
                  * @param pairs pairs vector
+                 * @param isSignal flag for checking if we are currently processing pairs from the same event or mixed events
                  * @return std::map<std::string, std::vector<Pair> > map of sorted vectors (each "branch"/bucket is a single group of similar pairs)
                  */
-                [[nodiscard]] std::map<std::string, std::vector<std::shared_ptr<Pair> > > SortPairs(const std::vector<std::shared_ptr<Pair> > &pairs);
+                [[nodiscard]] std::map<std::string, std::vector<std::shared_ptr<Pair> > > SortPairs(const std::vector<std::shared_ptr<Pair> > &pairs, bool isSignal = true);
                 
             public:
                 /**
@@ -201,14 +202,14 @@
         }
 
         template<typename Event, typename Track, typename Pair>
-        std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::SortPairs(const std::vector<std::shared_ptr<Pair> > &pairs)
+        std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::SortPairs(const std::vector<std::shared_ptr<Pair> > &pairs, bool isSingal = true)
         {
             std::string currentPairHash = "0";
             std::map<std::string, std::vector<std::shared_ptr<Pair> > > pairMap;
 
             for (const auto &pair : pairs)
             {
-                if (fPairCutFunction(pair))
+                if (fPairCutFunction(pair) && isSignal)
                 {
                     currentPairHash = "bad";
                 }
@@ -290,7 +291,7 @@
                 }
             }
 
-            return SortPairs(MakePairs(outputVec));
+            return SortPairs(MakePairs(outputVec),false);
         }
     } // namespace Mixing
     

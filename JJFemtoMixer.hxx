@@ -138,11 +138,11 @@
                  */
                 [[nodiscard]] constexpr std::size_t GetMaxBufferSize() const noexcept {return fBufferSize;}
                 /**
-                 * @brief Define whether mixing should occur only for "branches" with size equal (if true) / equal or less than (if flase) the max buffer size.
+                 * @brief Define whether mixing should occur only for "branches" with size equal to the max buffer size.
                  * 
-                 * @param isFixed Buffer size usage flag.
+                 * @param fixBuffer Buffer size usage flag. Set true if you want to mix only when branch buffer is full, or false it it can have any number of entries between 0 and MaxBufferSize
                  */
-                constexpr void SetFixedBuffer(bool isFixed) noexcept {fWaitForBuffer = isFixed;}
+                constexpr void FixBuffer(bool fixBuffer) noexcept {fWaitForBuffer = fixBuffer;}
                 /**
                  * @brief Get the mixing buffer flag.
                  * 

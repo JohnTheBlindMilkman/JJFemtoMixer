@@ -33,13 +33,13 @@
             static_assert(std::is_class<Pair>::value,"Provided pair-type template parameter is not a class or a struct!");
 
             private:
-                std::size_t fBufferSize;
-                bool fWaitForBuffer,fEventHashingFunctionIsDefined,fPairHashingFunctionIsDefined,fPairCutFunctionIsDefined;
-                std::map<std::string, std::deque<std::pair<std::string, std::shared_ptr<Track> > > > fSimilarityMap;
-                std::map<std::string,std::size_t> fBufferPopCounter;
-                std::function<std::string(const std::shared_ptr<Event> &)> fEventHashingFunction;
-                std::function<std::string(const std::shared_ptr<Pair> &)> fPairHashingFunction;
-                std::function<bool(const std::shared_ptr<Pair> &)> fPairCutFunction;
+                std::size_t m_bufferSize;
+                bool m_waitForBuffer,m_eventHashingFunctionIsDefined,m_pairHashingFunctionIsDefined,m_pairCutFunctionIsDefined;
+                std::map<std::string, std::deque<std::pair<std::string, std::shared_ptr<Track> > > > m_similarityMap;
+                std::map<std::string,std::size_t> m_bufferPopCounter;
+                std::function<std::string(const std::shared_ptr<Event> &)> m_eventHashingFunction;
+                std::function<std::string(const std::shared_ptr<Pair> &)> m_pairHashingFunction;
+                std::function<bool(const std::shared_ptr<Pair> &)> m_pairCutFunction;
                 /**
                  * @brief Create pairs of identical particles from given tracks
                  * 
@@ -60,65 +60,65 @@
                  * @brief Default constructor. Create mixer object with: buffer size 10, don't wait for full buffer, no hashing in event, track or pair, and no pair cut
                  * 
                  */
-                constexpr JJFemtoMixer() : fBufferSize(10), 
-                                fWaitForBuffer(false), 
-                                fEventHashingFunctionIsDefined(false),
-                                fPairHashingFunctionIsDefined(false),
-                                fPairCutFunctionIsDefined(false),
-                                fEventHashingFunction([](const std::shared_ptr<Event> &){return "0";}),
-                                fPairHashingFunction([](const std::shared_ptr<Pair> &){return "0";}),
-                                fPairCutFunction([](const std::shared_ptr<Pair> &){return false;}) {}
+                constexpr JJFemtoMixer() : m_bufferSize(10), 
+                                m_waitForBuffer(false), 
+                                m_eventHashingFunctionIsDefined(false),
+                                m_pairHashingFunctionIsDefined(false),
+                                m_pairCutFunctionIsDefined(false),
+                                m_eventHashingFunction([](const std::shared_ptr<Event> &){return "0";}),
+                                m_pairHashingFunction([](const std::shared_ptr<Pair> &){return "0";}),
+                                m_pairCutFunction([](const std::shared_ptr<Pair> &){return false;}) {}
 
                 /**
                  * @brief Set the Event Hashing Function object.
                  * 
                  * @param func Function object, can be lambda, standard function or std::function object.
                  */
-                constexpr void SetEventHashingFunction(const std::function<std::string(const std::shared_ptr<Event> &)> &func) noexcept {fEventHashingFunction = func; fEventHashingFunctionIsDefined = true;}
+                constexpr void SetEventHashingFunction(const std::function<std::string(const std::shared_ptr<Event> &)> &func) noexcept {m_eventHashingFunction = func; m_eventHashingFunctionIsDefined = true;}
                 /**
                  * @brief Set the Event Hashing Function object.
                  * 
                  * @param func Function object, can be lambda, standard function or std::function object.
                  */
-                constexpr void SetEventHashingFunction(std::function<std::string(const std::shared_ptr<Event> &)> &&func) noexcept {fEventHashingFunction = std::move(func);  fEventHashingFunctionIsDefined = true;}
+                constexpr void SetEventHashingFunction(std::function<std::string(const std::shared_ptr<Event> &)> &&func) noexcept {m_eventHashingFunction = std::move(func);  m_eventHashingFunctionIsDefined = true;}
                 /**
                  * @brief Get the corresponding hash for given Event object.
                  * 
                  * @param obj Event-type object
                  * @return std::string 
                  */
-                [[nodiscard]] std::string GetEventHash(const std::shared_ptr<Event> &obj) const noexcept {return fEventHashingFunction(obj);}
+                [[nodiscard]] std::string GetEventHash(const std::shared_ptr<Event> &obj) const noexcept {return m_eventHashingFunction(obj);}
                 /**
                  * @brief Set the Pair Hashing Function object.
                  * 
                  * @param func Function object, can be lambda, standard function or std::function object.
                  */
-                constexpr void SetPairHashingFunction(const std::function<std::string(const std::shared_ptr<Pair> &)> &func) noexcept {fPairHashingFunction = func; fPairHashingFunctionIsDefined = true;}
+                constexpr void SetPairHashingFunction(const std::function<std::string(const std::shared_ptr<Pair> &)> &func) noexcept {m_pairHashingFunction = func; m_pairHashingFunctionIsDefined = true;}
                 /**
                  * @brief Set the Pair Hashing Function object.
                  * 
                  * @param func Function object, can be lambda, standard function or std::function object.
                  */
-                constexpr void SetPairHashingFunction(std::function<std::string(const std::shared_ptr<Pair> &)> &&func) noexcept {fPairHashingFunction = std::move(func); fPairHashingFunctionIsDefined = true;}
+                constexpr void SetPairHashingFunction(std::function<std::string(const std::shared_ptr<Pair> &)> &&func) noexcept {m_pairHashingFunction = std::move(func); m_pairHashingFunctionIsDefined = true;}
                 /**
                  * @brief Get the corresponding hash for given Pair object.
                  * 
                  * @param obj Pair-type object.
                  * @return std::string 
                  */
-                [[nodiscard]] std::string GetPairHash(const std::shared_ptr<Pair> &obj) const noexcept {return fPairHashingFunction(obj);}
+                [[nodiscard]] std::string GetPairHash(const std::shared_ptr<Pair> &obj) const noexcept {return m_pairHashingFunction(obj);}
                 /**
                  * @brief Set the Pair Cutting Function object. The function should return true if pair should be rejected and false if accepted.
                  * 
                  * @param func Function object, can be lambda, standard function or std::function object.
                  */
-                constexpr void SetPairCuttingFunction(const std::function<bool(const std::shared_ptr<Pair> &)> &func) noexcept {fPairCutFunction = func; fPairCutFunctionIsDefined = true;}
+                constexpr void SetPairCuttingFunction(const std::function<bool(const std::shared_ptr<Pair> &)> &func) noexcept {m_pairCutFunction = func; m_pairCutFunctionIsDefined = true;}
                 /**
                  * @brief Set the Pair Cutting Function object. The function should return true if pair should be rejected and false if accepted.
                  * 
                  * @param func Function object, can be lambda, standard function or std::function object.
                  */
-                constexpr void SetPairCuttingFunction(std::function<bool(const std::shared_ptr<Pair> &)> &&func) noexcept {fPairCutFunction = std::move(func); fPairCutFunctionIsDefined = true;}
+                constexpr void SetPairCuttingFunction(std::function<bool(const std::shared_ptr<Pair> &)> &&func) noexcept {m_pairCutFunction = std::move(func); m_pairCutFunctionIsDefined = true;}
                 /**
                  * @brief Get the result of pair selection function for a given Pair object.
                  * 
@@ -126,32 +126,32 @@
                  * @return true Pair is rejected.
                  * @return false Pair is not rejected.
                  */
-                [[nodiscard]] constexpr bool GetPairCutResult(const std::shared_ptr<Pair> &obj) const noexcept {return fPairCutFunction(obj);}
+                [[nodiscard]] constexpr bool GetPairCutResult(const std::shared_ptr<Pair> &obj) const noexcept {return m_pairCutFunction(obj);}
                 /**
                  * @brief Set the max mixing buffer size for each "branch".
                  * 
                  * @param buffer Max buffer size.
                  */
-                constexpr void SetMaxBufferSize(std::size_t buffer) noexcept {fBufferSize = buffer;}
+                constexpr void SetMaxBufferSize(std::size_t buffer) noexcept {m_bufferSize = buffer;}
                 /**
                  * @brief Get the max mixing buffer size.
                  * 
                  * @return std::size_t Max buffer size.
                  */
-                [[nodiscard]] constexpr std::size_t GetMaxBufferSize() const noexcept {return fBufferSize;}
+                [[nodiscard]] constexpr std::size_t GetMaxBufferSize() const noexcept {return m_bufferSize;}
                 /**
                  * @brief Define whether mixing should occur only for "branches" with size equal to the max buffer size.
                  * 
                  * @param fixBuffer Buffer size usage flag. Set true if you want to mix only when branch buffer is full, or false it it can have any number of entries between 0 and MaxBufferSize
                  */
-                constexpr void FixBuffer(bool fixBuffer) noexcept {fWaitForBuffer = fixBuffer;}
+                constexpr void FixBuffer(bool fixBuffer) noexcept {m_waitForBuffer = fixBuffer;}
                 /**
                  * @brief Get the mixing buffer flag.
                  * 
                  * @return true - Mixing with fixed size.
                  * @return false - Mixnig with any size.
                  */
-                [[nodiscard]] constexpr bool GetBufferState() const noexcept {return fWaitForBuffer;};
+                [[nodiscard]] constexpr bool GetBufferState() const noexcept {return m_waitForBuffer;};
                 /**
                  * @brief Prints to the standard output information about current setup of JJFemtoMixer.
                  * 
@@ -210,13 +210,13 @@
 
             for (const auto &pair : pairs)
             {
-                if (fPairCutFunction(pair))
+                if (m_pairCutFunction(pair))
                 {
                     currentPairHash = "bad";
                 }
                 else
                 {
-                    currentPairHash = fPairHashingFunction(pair);
+                    currentPairHash = m_pairHashingFunction(pair);
                 }
 
                 // an entry for given currentPairHash may already exist so we must check if that's the case
@@ -237,10 +237,10 @@
         void JJFemtoMixer<Event,Track,Pair>::PrintSettings() const
         {
             std::cout << "\n------=============== JJFemtoMixer Settings ===============------\n";
-            std::cout << "Max Background Mixing Buffer Size: " << fBufferSize << ((fWaitForBuffer) ? " (FIXED)\n" : " (FLEXIBLE)\n");
-            std::cout << "Event Hashing Function: " << ((fEventHashingFunctionIsDefined) ? " User-defined\n" : " Not set\n");
-            std::cout << "Pair Hashing Function: " << ((fPairHashingFunctionIsDefined) ? " User-defined\n" : " Not set\n");
-            std::cout << "Pair Rejection Function: " << ((fPairCutFunctionIsDefined) ? " User-defined\n" : " Not set\n");
+            std::cout << "Max Background Mixing Buffer Size: " << m_bufferSize << ((m_waitForBuffer) ? " (FIXED)\n" : " (FLEXIBLE)\n");
+            std::cout << "Event Hashing Function: " << ((m_eventHashingFunctionIsDefined) ? " User-defined\n" : " Not set\n");
+            std::cout << "Pair Hashing Function: " << ((m_pairHashingFunctionIsDefined) ? " User-defined\n" : " Not set\n");
+            std::cout << "Pair Rejection Function: " << ((m_pairCutFunctionIsDefined) ? " User-defined\n" : " Not set\n");
             std::cout << "------=====================================================------\n" << std::endl;
         }
 
@@ -249,9 +249,9 @@
         {
             std::cout << "\n------================ JJFemtoMixer Status ================------\n";
             std::cout << "Stored events / total\tevent hash\ttimes poped\n";
-            for (const auto &[key,val] : fSimilarityMap)
+            for (const auto &[key,val] : m_similarityMap)
             {
-                std::cout << "\t" << val.size() << "/" << fBufferSize << "\t\t" << key << "\t\t" << fBufferPopCounter.at(key) << "\n";
+                std::cout << "\t" << val.size() << "/" << m_bufferSize << "\t\t" << key << "\t\t" << m_bufferPopCounter.at(key) << "\n";
             }
                 
             std::cout << "------=====================================================------\n" << std::endl;
@@ -260,22 +260,22 @@
         template<typename Event, typename Track, typename Pair>
         std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::AddEvent(const std::shared_ptr<Event> &event, const std::vector<std::shared_ptr<Track> > &tracks)
         {
-            std::string evtHash = fEventHashingFunction(event);
+            std::string evtHash = m_eventHashingFunction(event);
             std::pair<std::string, std::shared_ptr<Track> > trackPair{event->GetID(),*JJUtils::select_randomly(tracks.begin(),tracks.end())};
 
             // an entry for given evtHash may not exist, so we must check if that's the case
-            if (fSimilarityMap.find(evtHash) == fSimilarityMap.end())
+            if (m_similarityMap.find(evtHash) == m_similarityMap.end())
             {
-                fSimilarityMap.emplace(evtHash,std::deque<std::pair<std::string, std::shared_ptr<Track> > >(1,trackPair));
-                fBufferPopCounter.emplace(evtHash,0);
+                m_similarityMap.emplace(evtHash,std::deque<std::pair<std::string, std::shared_ptr<Track> > >(1,trackPair));
+                m_bufferPopCounter.emplace(evtHash,0);
             }
             else
             {
-                fSimilarityMap.at(evtHash).push_back(trackPair);
-                if (fSimilarityMap.at(evtHash).size() > fBufferSize)
+                m_similarityMap.at(evtHash).push_back(trackPair);
+                if (m_similarityMap.at(evtHash).size() > m_bufferSize)
                 {
-                    fSimilarityMap.at(evtHash).pop_front(); 
-                    fBufferPopCounter.at(evtHash)++;
+                    m_similarityMap.at(evtHash).pop_front(); 
+                    m_bufferPopCounter.at(evtHash)++;
                 }
             }
 
@@ -286,11 +286,11 @@
         std::map<std::string, std::vector<std::shared_ptr<Pair> > > JJFemtoMixer<Event,Track,Pair>::GetSimilarPairs(const std::shared_ptr<Event> &event)
         {
             std::vector<std::shared_ptr<Track> > outputVec;
-            std::string evtHash = fEventHashingFunction(event);
+            std::string evtHash = m_eventHashingFunction(event);
 
-            if (fSimilarityMap.at(evtHash).size() == fBufferSize || fWaitForBuffer == false)
+            if (m_similarityMap.at(evtHash).size() == m_bufferSize || m_waitForBuffer == false)
             {
-                for (const auto &[evtId,trck] : fSimilarityMap.at(evtHash))
+                for (const auto &[evtId,trck] : m_similarityMap.at(evtHash))
                 {
                     if (evtId != event->GetID())
                     {

@@ -17,7 +17,7 @@ void example1()
 
     std::cout << "Event no.:\t" << "Signal pairs:\t" << "Background pairs:\n";
 
-    for (int event = 0; event < 20; ++event)
+    for (int event = 0; event < 100; ++event)
     {
         // init my event with some values
         // important point: centrality is event mod 2 (so 0 or 1), which will give us 2 event gropus

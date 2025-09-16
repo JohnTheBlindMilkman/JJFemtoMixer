@@ -20,6 +20,7 @@
     #include <type_traits>
     #include <memory>
     #include <iostream>
+    #include <iomanip>
     #include "JJUtils.hxx"
 
     namespace Mixing
@@ -35,6 +36,7 @@
                 std::size_t fBufferSize;
                 bool fWaitForBuffer,fEventHashingFunctionIsDefined,fPairHashingFunctionIsDefined,fPairCutFunctionIsDefined;
                 std::map<std::string, std::deque<std::pair<std::string, std::shared_ptr<Track> > > > fSimilarityMap;
+                std::map<std::string,std::size_t> fBufferPopCounter;
                 std::function<std::string(const std::shared_ptr<Event> &)> fEventHashingFunction;
                 std::function<std::string(const std::shared_ptr<Pair> &)> fPairHashingFunction;
                 std::function<bool(const std::shared_ptr<Pair> &)> fPairCutFunction;
@@ -234,22 +236,25 @@
         template<typename Event, typename Track, typename Pair>
         void JJFemtoMixer<Event,Track,Pair>::PrintSettings() const
         {
-            std::cout << "\n------=========== JJFemtoMixer Settings ===========------\n";
+            std::cout << "\n------=============== JJFemtoMixer Settings ===============------\n";
             std::cout << "Max Background Mixing Buffer Size: " << fBufferSize << ((fWaitForBuffer) ? " (FIXED)\n" : " (FLEXIBLE)\n");
             std::cout << "Event Hashing Function: " << ((fEventHashingFunctionIsDefined) ? " User-defined\n" : " Not set\n");
             std::cout << "Pair Hashing Function: " << ((fPairHashingFunctionIsDefined) ? " User-defined\n" : " Not set\n");
             std::cout << "Pair Rejection Function: " << ((fPairCutFunctionIsDefined) ? " User-defined\n" : " Not set\n");
-            std::cout << "------==============================================------\n" << std::endl;
+            std::cout << "------=====================================================------\n" << std::endl;
         }
 
         template<typename Event, typename Track, typename Pair>
         void JJFemtoMixer<Event,Track,Pair>::PrintStatus() const
         {
-            std::cout << "\n------============ JJFemtoMixer Status ============------\n";
-            std::cout << "Currently stored events:\n";
+            std::cout << "\n------================ JJFemtoMixer Status ================------\n";
+            std::cout << "Stored events / total\tevent hash\ttimes poped\n";
             for (const auto &[key,val] : fSimilarityMap)
-                std::cout << val.size() << "/" << fBufferSize << "\t event hash: " << key << "\n";
-            std::cout << "------=============================================------\n" << std::endl;
+            {
+                std::cout << "\t" << val.size() << "/" << fBufferSize << "\t\t" << key << "\t\t" << fBufferPopCounter.at(key) << "\n";
+            }
+                
+            std::cout << "------=====================================================------\n" << std::endl;
         }
 
         template<typename Event, typename Track, typename Pair>
@@ -262,12 +267,16 @@
             if (fSimilarityMap.find(evtHash) == fSimilarityMap.end())
             {
                 fSimilarityMap.emplace(evtHash,std::deque<std::pair<std::string, std::shared_ptr<Track> > >(1,trackPair));
+                fBufferPopCounter.emplace(evtHash,0);
             }
             else
             {
                 fSimilarityMap.at(evtHash).push_back(trackPair);
                 if (fSimilarityMap.at(evtHash).size() > fBufferSize)
+                {
                     fSimilarityMap.at(evtHash).pop_front(); 
+                    fBufferPopCounter.at(evtHash)++;
+                }
             }
 
             return SortPairs(MakePairs(tracks));

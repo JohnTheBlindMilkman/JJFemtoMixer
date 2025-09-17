@@ -156,12 +156,12 @@
                  * @brief Prints to the standard output information about current setup of JJFemtoMixer.
                  * 
                  */
-                void PrintSettings() const;
+                void PrintSettings() const noexcept;
                 /**
                  * @brief Prints to the standard output information about the amounts of tracks and events currently stored in JJFemtoMixer.
                  * 
                  */
-                void PrintStatus() const;
+                void PrintStatus() const noexcept;
                 /**
                  * @brief Add currently processed event to the mixer. Call this method when performing femtoscopic analysis of identical particles.
                  * 
@@ -176,7 +176,7 @@
                  * @param event Current event (the event from which we don't want to get tracks).
                  * @return std::map<std::string, std::vector<Pair> > Sorted pairs from stored tracks for similar events.
                  */
-                [[nodiscard]] std::map<std::string, std::vector<std::shared_ptr<Pair> > > GetSimilarPairs(const std::shared_ptr<Event> &event) const noexept;
+                [[nodiscard]] std::map<std::string, std::vector<std::shared_ptr<Pair> > > GetSimilarPairs(const std::shared_ptr<Event> &event) const noexcept;
         };
 
         template<typename Event, typename Track, typename Pair>
@@ -288,7 +288,7 @@
             std::vector<std::shared_ptr<Track> > outputVec;
             std::string evtHash = m_eventHashingFunction(event);
 
-            if (m_similarityMap[evtHash].size() == m_bufferSize || m_waitForBuffer == false)
+            if (m_similarityMap.at(evtHash).size() == m_bufferSize || m_waitForBuffer == false)
             {
                 for (const auto &[evtId,trck] : m_similarityMap.at(evtHash))
                 {
